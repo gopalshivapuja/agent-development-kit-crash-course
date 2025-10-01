@@ -18,17 +18,18 @@ def get_cpu_info() -> Dict[str, Any]:
         Dict[str, Any]: Dictionary with CPU information structured for ADK
     """
     try:
-        # Get CPU information
+        # Get CPU information - optimize by calling cpu_percent only once
+        cpu_percent_per_core = psutil.cpu_percent(interval=1, percpu=True)
+        avg_cpu_usage = psutil.cpu_percent(interval=0)  # Use cached value from previous call
+        
         cpu_info = {
             "physical_cores": psutil.cpu_count(logical=False),
             "logical_cores": psutil.cpu_count(logical=True),
             "cpu_usage_per_core": [
                 f"Core {i}: {percentage:.1f}%"
-                for i, percentage in enumerate(
-                    psutil.cpu_percent(interval=1, percpu=True)
-                )
+                for i, percentage in enumerate(cpu_percent_per_core)
             ],
-            "avg_cpu_usage": f"{psutil.cpu_percent(interval=1):.1f}%",
+            "avg_cpu_usage": f"{avg_cpu_usage:.1f}%",
         }
 
         # Calculate some stats for the result summary

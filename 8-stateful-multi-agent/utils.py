@@ -55,15 +55,14 @@ def update_interaction_history(session_service, app_name, user_id, session_id, e
         if "timestamp" not in entry:
             entry["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Add the entry to interaction history
-        interaction_history.append(entry)
-
-        # Create updated state
+        # Create a copy of the current state to avoid race conditions
         updated_state = session.state.copy()
-        updated_state["interaction_history"] = interaction_history
+        
+        # Add the entry to interaction history
+        updated_state["interaction_history"] = interaction_history + [entry]
 
-        # Create a new session with updated state
-        session_service.create_session(
+        # Update session with the new state atomically
+        session_service.update_session(
             app_name=app_name,
             user_id=user_id,
             session_id=session_id,
