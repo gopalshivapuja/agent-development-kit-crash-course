@@ -32,6 +32,29 @@ def refund_course(tool_context: ToolContext) -> dict:
             "message": "You don't own this course, so it can't be refunded.",
         }
 
+    # Find the course to check purchase date
+    course_to_refund = None
+    for course in current_purchased_courses:
+        if isinstance(course, dict) and course.get("id") == course_id:
+            course_to_refund = course
+            break
+
+    # Check if refund is within 30-day window
+    if course_to_refund and "purchase_date" in course_to_refund:
+        try:
+            purchase_date = datetime.strptime(course_to_refund["purchase_date"], "%Y-%m-%d %H:%M:%S")
+            current_date = datetime.now()
+            days_since_purchase = (current_date - purchase_date).days
+            
+            if days_since_purchase > 30:
+                return {
+                    "status": "error",
+                    "message": f"Refund request denied. Course was purchased {days_since_purchase} days ago, which exceeds our 30-day refund policy.",
+                }
+        except ValueError:
+            # If date parsing fails, allow refund but log the issue
+            print(f"Warning: Could not parse purchase date '{course_to_refund.get('purchase_date')}' for course {course_id}")
+
     # Create new list without the course to be refunded
     new_purchased_courses = []
     for course in current_purchased_courses:
